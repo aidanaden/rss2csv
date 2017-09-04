@@ -10,14 +10,14 @@ def rss2csv(url):
 	feed = feedparser.parse(horrible_subs_rss_url)
 
 	#create special char table to be removed
-	special_char_table = str.maketrans(dict.fromkeys('/.'))
+	special_char_table = str.maketrans(dict.fromkeys('?./='))
 
 	#remove http and https from url
 	filename = horrible_subs_rss_url.replace('http://', '').replace('https://', '')
-	
+
 	#remove special characters
 	cleaned_filename = filename.translate(special_char_table)
-
+	
 	toCSVKeys = feed['entries'][0].keys()
 
 	with open(cleaned_filename + '.csv', "wt", encoding = "utf-8") as output_file:
