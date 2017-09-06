@@ -39,22 +39,24 @@ def LastModifiedDateTimeIsOlder(feed_UTC):
 
 	#convert both datetimes to utc to do calculation, 
 	#if possible would be better to do calculation with sgt
-	exitCode = ""
-	#sample = "2017-04-27 13:31:00+08:00"
-	dateutil_converted = dateutil.parser.parse(str(feed_UTC))
-	#utcSample = sgt2utc(sample)
-	cwd = os.path.getmtime(news_feed_file)
+
+	#converted version of feed's data time: expected to be in utc else will fk up
+	feed_converted = dateutil.parser.parse(str(feed_UTC))
+	
+	cwd = os.path.getmtime(output_filename)
 	converted = datetime.datetime.utcfromtimestamp(cwd)
+	#convert timestamp of last modified to utc + add tzone awareness
 	converted_tz = datetime.datetime(year=converted.year,month=converted.month,day=converted.day,
 		hour=converted.hour,minute=converted.minute,second=converted.second,tzinfo=pytz.utc)
-	print(converted_tz)
 	try:
-		if converted_tz < dateutil_converted:
+		#compare if feed date time is tz aware
+		if converted_tz < feed_converted:
 			return True
 		else:
 			return False
 	except:
-		if converted < dateutil_converted:
+		#compare if feed date time is tz naive
+		if converted < feed_converted:
 			return True
 		else:
 			return False
@@ -70,7 +72,7 @@ def getFileNameFromURL(url):
 
 	return cleaned_filename
 
-def rss2csv(url, categoryValue, dict_writer):
+def rss2csv(url, categoryValue, dict_writer, download):
 
 	#parse feed using feedparser
 	feed = feedparser.parse(url)
@@ -80,6 +82,7 @@ def rss2csv(url, categoryValue, dict_writer):
 	dateFields = ['published','pubDate','date','updated']
 	titleFields = ['title','id']
 	summaryFields = ['summary','description']
+	shouldDownload = False
 
 	for entry in feed['entries']:
 
@@ -90,11 +93,12 @@ def rss2csv(url, categoryValue, dict_writer):
 		for dateField in dateFields:
 			try:
 				shouldDownload = LastModifiedDateTimeIsOlder(entry[dateField])
+				print(shouldDownload)
 				converted_sg_time = utc2sgt(entry[dateField])
 			except:
 				continue
-		print(shouldDownload)		
-		if shouldDownload | len(df.index) <= 2:
+			
+		if shouldDownload | download:
 
 			for summaryField in summaryFields:
 				try:
@@ -108,34 +112,75 @@ def rss2csv(url, categoryValue, dict_writer):
 				except:
 					continue
 
-		
-
-			dict_writer.writerow({fieldname1:converted_sg_time,fieldname2:titleEntry,fieldname3:summaryEntry,fieldname4:entry['link'], fieldname5:categoryValue})
+			print("downloaded " + titleEntry)
+			dict_writer.writerow({fieldname1:converted_sg_time,fieldname2:titleEntry,
+				fieldname3:summaryEntry,fieldname4:entry['link'],fieldname5:categoryValue})
 
 	pass
 
-news_feed_file = 'News Feeds.csv'
-output_filename = "output_feeds.csv"
 
-fieldname1 = 'article_published'
-fieldname2 = 'article_title'
-fieldname3 = 'article_description'
-fieldname4 = 'aricle_url'
-fieldname5 = 'category'
-
-fieldNames = [fieldname1, fieldname2, fieldname3, fieldname4, fieldname5]
-
-with open(news_feed_file, 'rt', encoding = 'utf-8') as input_file:
-	df = pandas.read_csv(input_file)
-	with open(output_filename, "wt", encoding = "utf-8") as output_file:
-		dict_writer = csv.DictWriter(output_file, fieldNames)
-		dict_writer.writeheader()
-		print(len(df.index))
-		for column in df:
-			for row in df[column]:
-				rss2csv(str(row), str(column), dict_writer)
+#with open(news_feed_file, 'rt', encoding = 'utf-8') as input_file:
+	#df = pandas.read_csv(input_file)
+	#with open(output_filename, "wt", encoding = "utf-8") as output_file:
+		#dict_writer = csv.DictWriter(output_file, fieldNames)
+		#dict_writer.writeheader()
+		#try:
+			#with open(output_filename, 'rt', encoding = 'utf-8') as input_output_file:
+				#output_df = pandas.read_csv(input_output_file)
+				#print(len(output_df.index))
+		#except:
+			#print('unable to read output file')
 			
-		
+
+		#for column in df:
+			#for row in df[column]:
+				#rss2csv(str(row), str(column), dict_writer)
+
+
+def firstDownload():
+	shouldDownload = True
+	with open(news_feed_file, 'rt', encoding = 'utf-8') as input_file:
+		df = pandas.read_csv(input_file)
+		with open(output_filename, "wt", encoding = "utf-8") as output_file:
+			dict_writer = csv.DictWriter(output_file, fieldNames)
+			dict_writer.writeheader()
+			for column in df:
+				for row in df[column]:
+					rss2csv(str(row), str(column), dict_writer,True)
+
+def update():
+	with open(news_feed_file, 'rt', encoding = 'utf-8') as input_file:
+		df = pandas.read_csv(input_file)
+		with open(output_filename, "at", encoding = "utf-8") as output_file:
+			dict_writer = csv.DictWriter(output_file, fieldNames)
+			dict_writer.writeheader()
+			for column in df:
+				for row in df[column]:
+					rss2csv(str(row), str(column), dict_writer,False)
+
+			
+if __name__ == "__main__":
+	news_feed_file = 'News Feeds.csv'
+	output_filename = "output_feeds.csv"
+
+	fieldname1 = 'article_published'
+	fieldname2 = 'article_title'
+	fieldname3 = 'article_description'
+	fieldname4 = 'aricle_url'
+	fieldname5 = 'category'
+
+	fieldNames = [fieldname1, fieldname2, fieldname3, fieldname4, fieldname5]
+	try:
+		arg1 = sys.argv[1]
+		if arg1 == 'download':
+			firstDownload()
+		elif arg1 == 'update':
+			update()
+
+	except IndexError:
+		print("Usage: rss2csv.py <url of RSS feed>")
+		sys.exit()
+
 		
 
 
