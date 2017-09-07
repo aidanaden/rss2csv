@@ -22,18 +22,18 @@ def utc2sgt(time):
 
 	return local
 
-def EDT2SGConverter(time):
+#def EDT2SGConverter(time):
 
-	if time.endswith('EDT'):
-		new_time = time[:-4]
+	#if time.endswith('EDT'):
+		#new_time = time[:-4]
 
-		original_fmt = "%a, %d %b %Y %H:%M:%S"
+		#original_fmt = "%a, %d %b %Y %H:%M:%S"
 
-		date = datetime.datetime.strptime(new_time, original_fmt)
-		dateLocalized = date + datetime.timedelta(days=1/2)
-		date_sg_timezone = str(dateLocalized) + " SGT"
+		#date = datetime.datetime.strptime(new_time, original_fmt)
+		#dateLocalized = date + datetime.timedelta(days=1/2)
+		#date_sg_timezone = str(dateLocalized) + " SGT"
 	
-		return date_sg_timezone
+		#return date_sg_timezone
 
 def LastModifiedDateTimeIsOlder(feed_UTC):
 
@@ -62,15 +62,15 @@ def LastModifiedDateTimeIsOlder(feed_UTC):
 			return False
 
 
-def getFileNameFromURL(url):
-	#create special char table to be removed
-	special_char_table = str.maketrans(dict.fromkeys('?./='))
-	#remove http and https from url
-	filename = url.replace('http://', '').replace('https://', '')
-	#remove special characters
-	cleaned_filename = filename.translate(special_char_table)
+#def getFileNameFromURL(url):
+	##create special char table to be removed
+	#special_char_table = str.maketrans(dict.fromkeys('?./='))
+	##remove http and https from url
+	#filename = url.replace('http://', '').replace('https://', '')
+	##remove special characters
+	#cleaned_filename = filename.translate(special_char_table)
 
-	return cleaned_filename
+	#return cleaned_filename
 
 def rss2csv(url, categoryValue, dict_writer, download):
 
@@ -79,6 +79,7 @@ def rss2csv(url, categoryValue, dict_writer, download):
 
 	#filename = getFileNameFromURL(url)
 	
+	#create fields arrays to check
 	dateFields = ['published','pubDate','date','updated']
 	titleFields = ['title','id']
 	summaryFields = ['summary','description']
@@ -93,7 +94,6 @@ def rss2csv(url, categoryValue, dict_writer, download):
 		for dateField in dateFields:
 			try:
 				shouldDownload = LastModifiedDateTimeIsOlder(entry[dateField])
-				print(shouldDownload)
 				converted_sg_time = utc2sgt(entry[dateField])
 			except:
 				continue
@@ -153,7 +153,6 @@ def update():
 		df = pandas.read_csv(input_file)
 		with open(output_filename, "at", encoding = "utf-8") as output_file:
 			dict_writer = csv.DictWriter(output_file, fieldNames)
-			dict_writer.writeheader()
 			for column in df:
 				for row in df[column]:
 					rss2csv(str(row), str(column), dict_writer,False)
@@ -176,9 +175,11 @@ if __name__ == "__main__":
 			firstDownload()
 		elif arg1 == 'update':
 			update()
+		else:
+			print("Usage: python readcsvTesting.py <command>\nCommand list: \n1. download : download all rss feeds\n2. update rss feeds")
 
 	except IndexError:
-		print("Usage: rss2csv.py <url of RSS feed>")
+		print("Usage: python readcsvTesting.py <command>\nCommand list: \n1. download : download all rss feeds\n2. update rss feeds")
 		sys.exit()
 
 		
