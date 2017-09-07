@@ -1,4 +1,5 @@
-Vulnerabilities,Exploits,Malware,Cyber Security News
-https://nvd.nist.gov/download/nvd-rss.xml,https://www.exploit-db.com/rss.xml,http://feeds.feedburner.com/feedburner/Talos?format=xml,http://feeds.feedburner.com/TheHackersNews
-https://nvd.nist.gov/download/nvd-rss-analyzed.xml,,,http://www.darkreading.com/rss_simple.asp
-https://threatpost.com/category/vulnerabilities/feed/,,,
+Vulnerabilities,Exploits,Malware,Cyber Security News,Sans,Tech News
+https://nvd.nist.gov/download/nvd-rss.xml,https://www.exploit-db.com/rss.xml,http://feeds.feedburner.com/feedburner/Talos?format=xml,http://feeds.feedburner.com/TheHackersNews,http://feeds.feedburner.com/SansInstituteSecLab,http://feeds.reuters.com/reuters/technologyNews
+https://nvd.nist.gov/download/nvd-rss-analyzed.xml,,,http://www.darkreading.com/rss_simple.asp,,
+https://threatpost.com/category/vulnerabilities/feed/,,,https://nakedsecurity.sophos.com/feed/,,
+,,,http://rss.slashdot.org/Slashdot/slashdotMain,,
