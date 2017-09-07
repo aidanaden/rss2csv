@@ -46,13 +46,13 @@ def convert2sgt(time,url):
 	
 		#return date_sg_timezone
 
-def LastModifiedDateTimeIsOlder(feed_UTC):
+def LastModifiedDateTimeIsOlder(feed_UTC,url):
 
 	#convert both datetimes to utc to do calculation, 
 	#if possible would be better to do calculation with sgt
-
+	
 	#converted version of feed's data time: expected to be in utc else will fk up
-	feed_converted = dateutil.parser.parse(str(feed_UTC))
+	feed_converted = convert2utc(feed_UTC,url)
 	
 	cwd = os.path.getmtime(output_filename)
 	converted = datetime.datetime.utcfromtimestamp(cwd)
@@ -71,6 +71,26 @@ def LastModifiedDateTimeIsOlder(feed_UTC):
 			return True
 		else:
 			return False
+
+def convert2utc(feed_date,url):
+
+	feed_converted = dateutil.parser.parse(str(feed_UTC))
+	utc = tz.tzutc()
+	if url in EDTURL:
+		from_zone = tz.gettz('US/Eastern')
+		edt = feed_date.replace(tzinfo=from_zone)
+		local = edt.astimezone(utc)
+		return local
+
+	elif url in PDTURL:
+		from_zone = tz.gettz('US/Pacific')
+		pdt = feed_date.replace(tzinfo=from_zone)
+		local = pdt.astimezone(utc)
+		return local
+
+	else:
+		local = feed_date
+		return local
 
 
 #def getFileNameFromURL(url):
@@ -104,7 +124,7 @@ def rss2csv(url, categoryValue, dict_writer, download):
 
 		for dateField in dateFields:
 			try:
-				shouldDownload = LastModifiedDateTimeIsOlder(entry[dateField])
+				shouldDownload = LastModifiedDateTimeIsOlder(entry[dateField],url)
 			except:
 				pass
 			else:
@@ -192,7 +212,7 @@ if __name__ == "__main__":
 
 	fieldNames = [fieldname1, fieldname2, fieldname3, fieldname4, fieldname5]
 
-	usageMessage = "\nUsage: python readcsvTesting.py <command>\nExample: python readcsvTesting.py download\n\nOptions:\n1) download : download all rss feeds\n2) update : update rss feeds"
+	usageMessage = "\nUsage: python aidantifier.py <command>\nExample: python aidantifier.py download\n\nOptions:\n1) download : download all rss feeds\n2) update : update rss feeds"
 	try:
 		arg1 = sys.argv[1]
 		if arg1 == 'download':
