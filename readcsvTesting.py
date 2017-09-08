@@ -58,7 +58,7 @@ def LastModifiedDateTimeIsOlder(feed_UTC,url):
 	converted = datetime.datetime.utcfromtimestamp(cwd)
 	#convert timestamp of last modified to utc + add tzone awareness
 	converted_tz = datetime.datetime(year=converted.year,month=converted.month,day=converted.day,
-		hour=converted.hour,minute=converted.minute,second=converted.second,tzinfo=pytz.utc)
+		hour=converted.hour,minute=converted.minute,second=converted.second,tzinfo=tz.tzutc())
 	try:
 		#compare if feed date time is tz aware
 		if converted_tz < feed_converted:
@@ -74,22 +74,24 @@ def LastModifiedDateTimeIsOlder(feed_UTC,url):
 
 def convert2utc(feed_date,url):
 
-	feed_converted = dateutil.parser.parse(str(feed_UTC))
+	feed_converted = dateutil.parser.parse(str(feed_date))
 	utc = tz.tzutc()
 	if url in EDTURL:
 		from_zone = tz.gettz('US/Eastern')
-		edt = feed_date.replace(tzinfo=from_zone)
+		edt = feed_converted.replace(tzinfo=from_zone)
 		local = edt.astimezone(utc)
-		return local
+		local_dt = dateutil.parser.parse(str(local))
+		return local_dt
 
 	elif url in PDTURL:
 		from_zone = tz.gettz('US/Pacific')
-		pdt = feed_date.replace(tzinfo=from_zone)
+		pdt = feed_converted.replace(tzinfo=from_zone)
 		local = pdt.astimezone(utc)
-		return local
+		local_dt = dateutil.parser.parse(str(local))
+		return local_dt
 
 	else:
-		local = feed_date
+		local = feed_converted
 		return local
 
 
@@ -112,7 +114,7 @@ def rss2csv(url, categoryValue, dict_writer, download):
 	
 	#create fields arrays to check
 	dateFields = ['published','pubDate','date','updated']
-	titleFields = ['title','id']
+	titleFields = ['title']
 	summaryFields = ['summary','description']
 	shouldDownload = False
 
@@ -123,26 +125,40 @@ def rss2csv(url, categoryValue, dict_writer, download):
 		titleEntry = "NA"
 
 		for dateField in dateFields:
-			try:
-				shouldDownload = LastModifiedDateTimeIsOlder(entry[dateField],url)
-			except:
-				pass
+			if dateField in entry:
+				dateOfEntry = entry[dateField]
+				shouldDownload = LastModifiedDateTimeIsOlder(dateOfEntry,url)
+				converted_sg_time = convert2sgt(dateOfEntry,url)
+			#try:
+				#shouldDownload = LastModifiedDateTimeIsOlder(entry[dateField],url)
 			else:
-				converted_sg_time = convert2sgt(entry[dateField],url)
+				pass
+			#except:
+			#	pass
+			#else:
+			#	converted_sg_time = convert2sgt(entry[dateField],url)
 
 		if shouldDownload | download:
 
 			for summaryField in summaryFields:
-				try:
+				if summaryField in entry:
 					summaryEntry = entry[summaryField]
-				except:
+				else:
 					pass
+				#try:
+				#	summaryEntry = entry[summaryField]
+				#except:
+				#	pass
 
 			for titleField in titleFields:
-				try:
+				if titleField in entry:
 					titleEntry = entry[titleField]
-				except:
+				else:
 					pass
+				#try:
+				#	titleEntry = entry[titleField]
+				#except:
+				#	pass
 
 			print("downloaded " + titleEntry)
 			dict_writer.writerow({fieldname1:converted_sg_time,fieldname2:titleEntry,
