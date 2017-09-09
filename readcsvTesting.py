@@ -206,19 +206,23 @@ def update():
 					rss2csv(str(row), str(column), dict_writer,False)
 
 #def sortCSVByDate():
+def loadConfig():
+	import imp
+	f = open("config.cfg")
+	global data
+	data = imp.load_source('data', '', f)
+	f.close()
 
 
 if __name__ == "__main__":
-
-	# time zones for urls : update these dictionaries 
-	# for future urls that use data times that aren't in utc
 	
-	EDTURL = ["https://phys.org/rss-feed/technology-news/security/","http://www.darkreading.com/rss_simple.asp",
-			  "https://phys.org/rss-feed/technology-news/security/","http://feeds.reuters.com/reuters/technologyNews"]
-	PDTURL = ["http://feeds.feedburner.com/feedburner/Talos?format=xml","http://feeds.feedburner.com/TheHackersNews"]
-
-	news_feed_file = 'News Feeds.csv'
-	output_filename = "output_feeds.csv"
+	# init config
+	loadConfig()
+	EDTURL = data.EDTURL
+	PDTURL = data.PDTURL
+	news_feed_file = data.news_feed_file
+	output_filename = data.output_filename
+	
 
 	fieldname1 = 'article_published'
 	fieldname2 = 'article_title'
