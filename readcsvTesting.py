@@ -7,39 +7,22 @@ import datetime
 import pytz
 import dateutil.parser
 from dateutil import tz
+from dateutil import parser
 
-def convert2sgt(time,url):
+def shortcutConvertSG(date_time):
+	dt = parser.parse(date_time)
+	dt.astimezone(tzinfo=None)
+	
+	return dt
 
-	if time is None:
-		return "NA"
 
-	to_zone = tz.tzlocal()
-	date = dateutil.parser.parse(time)
-
-	if url in EDTURL:
-		from_zone = tz.gettz('US/Eastern')
-		edt = date.replace(tzinfo=from_zone)
-		local = edt.astimezone(to_zone)
-
-	elif url in PDTURL:
-		from_zone = tz.gettz('US/Pacific')
-		pdt = date.replace(tzinfo=from_zone)
-		local = pdt.astimezone(to_zone)
-
-	else:
-		from_zone = tz.tzutc()
-		utc = date.replace(tzinfo=from_zone)
-		local = utc.astimezone(to_zone)
-
-	return local
-
-def LastModifiedDateTimeIsOlder(feed_UTC,url):
+def LastModifiedDateTimeIsOlder(dtObj):
 
 	#convert both datetimes to utc to do calculation, 
 	#if possible would be better to do calculation with sgt
 	
 	#converted version of feed's data time: expected to be in utc else will fk up
-	feed_converted = convert2utc(feed_UTC,url)
+	feed_converted = dtObj.astimezone(tz=tz.tzutc())
 	
 	cwd = os.path.getmtime(output_filename)
 	converted = datetime.datetime.utcfromtimestamp(cwd)
@@ -59,28 +42,6 @@ def LastModifiedDateTimeIsOlder(feed_UTC,url):
 		else:
 			return False
 
-def convert2utc(feed_date,url):
-
-	feed_converted = dateutil.parser.parse(str(feed_date))
-	utc = tz.tzutc()
-	if url in EDTURL:
-		from_zone = tz.gettz('US/Eastern')
-		edt = feed_converted.replace(tzinfo=from_zone)
-		local = edt.astimezone(utc)
-		local_dt = dateutil.parser.parse(str(local))
-		return local_dt
-
-	elif url in PDTURL:
-		from_zone = tz.gettz('US/Pacific')
-		pdt = feed_converted.replace(tzinfo=from_zone)
-		local = pdt.astimezone(utc)
-		local_dt = dateutil.parser.parse(str(local))
-		return local_dt
-
-	else:
-		local = feed_converted
-		return local
-
 def rss2csv(url, categoryValue, dict_writer, download):
 
 	feed = feedparser.parse(url)
@@ -88,6 +49,7 @@ def rss2csv(url, categoryValue, dict_writer, download):
 	dateFields = ['published','pubDate','date','updated']
 	titleFields = ['title']
 	summaryFields = ['summary','description']
+	categoryFields = ['category']
 	shouldDownload = False
 
 	for entry in feed['entries']:
@@ -95,12 +57,13 @@ def rss2csv(url, categoryValue, dict_writer, download):
 		converted_sg_time = "NA"
 		summaryEntry = "NA"
 		titleEntry = "NA"
+		categoryEntry = ""
 
 		for dateField in dateFields:
 			if dateField in entry:
-				dateOfEntry = entry[dateField]
-				shouldDownload = LastModifiedDateTimeIsOlder(dateOfEntry,url)
-				converted_sg_time = convert2sgt(dateOfEntry,url)
+				dt = parser.parse(entry[dateField])
+				converted_sg_time = dt.astimezone(tz=None)
+				shouldDownload = LastModifiedDateTimeIsOlder(dt)
 			else:
 				pass
 
@@ -118,9 +81,15 @@ def rss2csv(url, categoryValue, dict_writer, download):
 				else:
 					pass
 
+			try:
+				for tag in entry['tags']:
+					categoryEntry += tag['term'] + ','
+			except:
+				pass
+
 			print("downloaded " + titleEntry)
 			dict_writer.writerow({date_time:converted_sg_time,title:titleEntry,publisher:feed.feed.title,
-				description:summaryEntry,link:entry['link'],category:categoryValue})
+				description:summaryEntry,link:entry['link'],category:categoryEntry})
 
 	pass
 
@@ -154,23 +123,26 @@ def loadConfig():
 	f.close()
 
 def checkIfStringExistsInCSV(string):
-	with open('output_feeds.csv', 'rt', encoding='utf-8') as input_file:
+	with open(output_filename, 'rt', encoding='utf-8') as input_file:
 		df = pandas.read_csv(input_file)
-		for column in df:
+		searchList = ['category','article_description'] # list of columns to search from
+		for column in searchList:
 			try:
-				selectedDf = df[df[column].str.contains(string)]
+				lowercaseDf = df[column].str.lower()
+				selectedDf = df[lowercaseDf.str.contains(string.lower())]
+			except:
+				pass
+			else:
 				for title, publisher in zip(selectedDf['article_title'], selectedDf['article_publisher']):
 					print("Publisher: ",publisher)
 					print("Title: ", title, '\n')
-			except:
-				pass
 
 if __name__ == "__main__":
 	
 	# init config
 	loadConfig()
-	EDTURL = data.EDTURL
-	PDTURL = data.PDTURL
+	#EDTURL = data.EDTURL
+	#PDTURL = data.PDTURL
 	news_feed_file = data.news_feed_file
 	output_filename = data.output_filename
 	
