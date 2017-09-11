@@ -33,19 +33,6 @@ def convert2sgt(time,url):
 
 	return local
 
-#def EDT2SGConverter(time):
-
-	#if time.endswith('EDT'):
-		#new_time = time[:-4]
-
-		#original_fmt = "%a, %d %b %Y %H:%M:%S"
-
-		#date = datetime.datetime.strptime(new_time, original_fmt)
-		#dateLocalized = date + datetime.timedelta(days=1/2)
-		#date_sg_timezone = str(dateLocalized) + " SGT"
-	
-		#return date_sg_timezone
-
 def LastModifiedDateTimeIsOlder(feed_UTC,url):
 
 	#convert both datetimes to utc to do calculation, 
@@ -94,25 +81,10 @@ def convert2utc(feed_date,url):
 		local = feed_converted
 		return local
 
-
-#def getFileNameFromURL(url):
-	##create special char table to be removed
-	#special_char_table = str.maketrans(dict.fromkeys('?./='))
-	##remove http and https from url
-	#filename = url.replace('http://', '').replace('https://', '')
-	##remove special characters
-	#cleaned_filename = filename.translate(special_char_table)
-
-	#return cleaned_filename
-
 def rss2csv(url, categoryValue, dict_writer, download):
 
-	#parse feed using feedparser
 	feed = feedparser.parse(url)
 
-	#filename = getFileNameFromURL(url)
-	
-	#create fields arrays to check
 	dateFields = ['published','pubDate','date','updated']
 	titleFields = ['title']
 	summaryFields = ['summary','description']
@@ -129,14 +101,8 @@ def rss2csv(url, categoryValue, dict_writer, download):
 				dateOfEntry = entry[dateField]
 				shouldDownload = LastModifiedDateTimeIsOlder(dateOfEntry,url)
 				converted_sg_time = convert2sgt(dateOfEntry,url)
-			#try:
-				#shouldDownload = LastModifiedDateTimeIsOlder(entry[dateField],url)
 			else:
 				pass
-			#except:
-			#	pass
-			#else:
-			#	converted_sg_time = convert2sgt(entry[dateField],url)
 
 		if shouldDownload | download:
 
@@ -145,44 +111,18 @@ def rss2csv(url, categoryValue, dict_writer, download):
 					summaryEntry = entry[summaryField]
 				else:
 					pass
-				#try:
-				#	summaryEntry = entry[summaryField]
-				#except:
-				#	pass
 
 			for titleField in titleFields:
 				if titleField in entry:
 					titleEntry = entry[titleField]
 				else:
 					pass
-				#try:
-				#	titleEntry = entry[titleField]
-				#except:
-				#	pass
 
 			print("downloaded " + titleEntry)
-			dict_writer.writerow({fieldname1:converted_sg_time,fieldname2:titleEntry,
-				fieldname3:summaryEntry,fieldname4:entry['link'],fieldname5:categoryValue})
+			dict_writer.writerow({date_time:converted_sg_time,title:titleEntry,publisher:feed.feed.title,
+				description:summaryEntry,link:entry['link'],category:categoryValue})
 
 	pass
-
-
-#with open(news_feed_file, 'rt', encoding = 'utf-8') as input_file:
-	#df = pandas.read_csv(input_file)
-	#with open(output_filename, "wt", encoding = "utf-8") as output_file:
-		#dict_writer = csv.DictWriter(output_file, fieldNames)
-		#dict_writer.writeheader()
-		#try:
-			#with open(output_filename, 'rt', encoding = 'utf-8') as input_output_file:
-				#output_df = pandas.read_csv(input_output_file)
-				#print(len(output_df.index))
-		#except:
-			#print('unable to read output file')
-			
-
-		#for column in df:
-			#for row in df[column]:
-				#rss2csv(str(row), str(column), dict_writer)
 
 
 def firstDownload():
@@ -213,6 +153,17 @@ def loadConfig():
 	data = imp.load_source('data', '', f)
 	f.close()
 
+def checkIfStringExistsInCSV(string):
+	with open('output_feeds.csv', 'rt', encoding='utf-8') as input_file:
+		df = pandas.read_csv(input_file)
+		for column in df:
+			try:
+				selectedDf = df[df[column].str.contains(string)]
+				for title, publisher in zip(selectedDf['article_title'], selectedDf['article_publisher']):
+					print("Publisher: ",publisher)
+					print("Title: ", title, '\n')
+			except:
+				pass
 
 if __name__ == "__main__":
 	
@@ -223,14 +174,14 @@ if __name__ == "__main__":
 	news_feed_file = data.news_feed_file
 	output_filename = data.output_filename
 	
+	date_time = 'article_published'
+	title = 'article_title'
+	publisher = 'article_publisher'
+	description = 'article_description'
+	link = 'article_url'
+	category = 'category'
 
-	fieldname1 = 'article_published'
-	fieldname2 = 'article_title'
-	fieldname3 = 'article_description'
-	fieldname4 = 'aricle_url'
-	fieldname5 = 'category'
-
-	fieldNames = [fieldname1, fieldname2, fieldname3, fieldname4, fieldname5]
+	fieldNames = [date_time, title, publisher, description, link, category]
 
 	usageMessage = "\nUsage: python aidantifier.py <command>\nExample: python aidantifier.py download\n\nOptions:\n1) download : download all rss feeds\n2) update : update rss feeds"
 	try:
@@ -239,6 +190,9 @@ if __name__ == "__main__":
 			firstDownload()
 		elif arg1 == 'update':
 			update()
+		elif arg1 == 'search':
+			arg2 = sys.argv[2]
+			checkIfStringExistsInCSV(arg2)
 		else:
 			print(usageMessage)
 
