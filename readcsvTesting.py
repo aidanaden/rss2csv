@@ -10,12 +10,6 @@ from dateutil import tz
 from dateutil import parser
 from time import mktime
 
-def shortcutConvertSG(date_time):
-	dt = parser.parse(date_time)
-	dt.astimezone(tzinfo=None)
-	
-	return dt
-
 def utc2sgt(time):
 	date = dateutil.parser.parse(time)
 	from_zone = tz.tzutc()
@@ -27,30 +21,17 @@ def utc2sgt(time):
 	return local
 
 def LastModifiedDateTimeIsOlder(dtObj):
-
-	#convert both datetimes to utc to do calculation, 
-	#if possible would be better to do calculation with sgt
-	
-	#converted version of feed's data time: expected to be in utc else will fk up
-	feed_converted = dtObj.astimezone(tz=tz.tzutc())
 	
 	cwd = os.path.getmtime(output_filename)
 	converted = datetime.datetime.utcfromtimestamp(cwd)
-	#convert timestamp of last modified to utc + add tzone awareness
 	converted_tz = datetime.datetime(year=converted.year,month=converted.month,day=converted.day,
 		hour=converted.hour,minute=converted.minute,second=converted.second,tzinfo=tz.tzutc())
-	try:
-		#compare if feed date time is tz aware
-		if converted_tz < feed_converted:
-			return True
-		else:
-			return False
-	except:
-		#compare if feed date time is tz naive
-		if converted < feed_converted:
-			return True
-		else:
-			return False
+
+	if converted_tz < dtObj:
+		return True
+	else:
+		return False
+	
 
 def rss2csv(url, categoryValue, dict_writer, download):
 
@@ -71,9 +52,7 @@ def rss2csv(url, categoryValue, dict_writer, download):
 
 		for dateField in dateFields:
 			try:
-				#dt = parser.parse(entry[dateField])
 				dt2 = datetime.datetime.fromtimestamp(mktime(entry[dateField]))
-	
 				time_aware_dt2_for_comparison = dt2.replace(tzinfo=tz.tzutc())
 				shouldDownload = LastModifiedDateTimeIsOlder(time_aware_dt2_for_comparison)
 				converted_sg_time = utc2sgt(str(dt2))
@@ -133,8 +112,6 @@ def update():
 				for row in df[column]:
 					rss2csv(str(row), str(column), dict_writer,False)
 
-#def sortCSVByDate():
-
 def checkIfStringExistsInCSV(string):
 	with open(output_filename, 'rt', encoding='utf-8') as input_file:
 		df = pandas.read_csv(input_file)
@@ -149,6 +126,7 @@ def checkIfStringExistsInCSV(string):
 			for title, publisher in zip(selectedDf['article_title'], selectedDf['article_publisher']):
 				print("Publisher: ",publisher)
 				print("Title: ", title, '\n')
+
 
 if __name__ == "__main__":
 	
