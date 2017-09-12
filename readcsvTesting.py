@@ -8,6 +8,7 @@ import pytz
 import dateutil.parser
 from dateutil import tz
 from dateutil import parser
+from time import mktime
 
 def shortcutConvertSG(date_time):
 	dt = parser.parse(date_time)
@@ -15,6 +16,15 @@ def shortcutConvertSG(date_time):
 	
 	return dt
 
+def utc2sgt(time):
+	date = dateutil.parser.parse(time)
+	from_zone = tz.tzutc()
+	to_zone = tz.tzlocal()
+
+	utc = date.replace(tzinfo=from_zone)
+	local = utc.astimezone(to_zone)
+
+	return local
 
 def LastModifiedDateTimeIsOlder(dtObj):
 
@@ -46,7 +56,7 @@ def rss2csv(url, categoryValue, dict_writer, download):
 
 	feed = feedparser.parse(url)
 
-	dateFields = ['published','pubDate','date','updated']
+	dateFields = ['published_parsed','updated_parsed']
 	titleFields = ['title']
 	summaryFields = ['summary','description']
 	categoryFields = ['category']
@@ -60,12 +70,21 @@ def rss2csv(url, categoryValue, dict_writer, download):
 		categoryEntry = ""
 
 		for dateField in dateFields:
-			if dateField in entry:
-				dt = parser.parse(entry[dateField])
-				converted_sg_time = dt.astimezone(tz=None)
-				shouldDownload = LastModifiedDateTimeIsOlder(dt)
-			else:
+			try:
+				#dt = parser.parse(entry[dateField])
+				dt2 = datetime.datetime.fromtimestamp(mktime(entry[dateField]))
+	
+				time_aware_dt2_for_comparison = dt2.replace(tzinfo=tz.tzutc())
+				shouldDownload = LastModifiedDateTimeIsOlder(time_aware_dt2_for_comparison)
+				converted_sg_time = utc2sgt(str(dt2))
+			except:
 				pass
+
+		#print(utc2sgt(str(dt2)))
+		#converted_sg_time = dt.astimezone(tz=None)
+		#shouldDownload = LastModifiedDateTimeIsOlder(dt)
+			#else:
+				#pass
 
 		if shouldDownload | download:
 
@@ -115,36 +134,26 @@ def update():
 					rss2csv(str(row), str(column), dict_writer,False)
 
 #def sortCSVByDate():
-def loadConfig():
-	import imp
-	f = open("config.cfg")
-	global data
-	data = imp.load_source('data', '', f)
-	f.close()
 
 def checkIfStringExistsInCSV(string):
 	with open(output_filename, 'rt', encoding='utf-8') as input_file:
 		df = pandas.read_csv(input_file)
 		searchList = ['category','article_description'] # list of columns to search from
 		for column in searchList:
-			try:
-				lowercaseDf = df[column].str.lower()
-				selectedDf = df[lowercaseDf.str.contains(string.lower())]
-			except:
-				pass
-			else:
-				for title, publisher in zip(selectedDf['article_title'], selectedDf['article_publisher']):
-					print("Publisher: ",publisher)
-					print("Title: ", title, '\n')
+			#try:
+			lowercaseDf = df[column].str.lower()
+			selectedDf = df[lowercaseDf.str.contains(string.lower(),na = False)]
+			#except:
+			#	pass
+			#else:
+			for title, publisher in zip(selectedDf['article_title'], selectedDf['article_publisher']):
+				print("Publisher: ",publisher)
+				print("Title: ", title, '\n')
 
 if __name__ == "__main__":
 	
-	# init config
-	loadConfig()
-	#EDTURL = data.EDTURL
-	#PDTURL = data.PDTURL
-	news_feed_file = data.news_feed_file
-	output_filename = data.output_filename
+	news_feed_file = "News Feeds.csv"
+	output_filename = "output_feeds.csv"
 	
 	date_time = 'article_published'
 	title = 'article_title'
