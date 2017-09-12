@@ -36,6 +36,10 @@ def LastModifiedDateTimeIsOlder(dtObj):
 def rss2csv(url, categoryValue, dict_writer, download):
 
 	feed = feedparser.parse(url)
+	try:
+		publisher_description_entry = feed.feed.description
+	except:
+		publisher_description_entry = ""
 
 	dateFields = ['published_parsed','updated_parsed']
 	titleFields = ['title']
@@ -59,12 +63,6 @@ def rss2csv(url, categoryValue, dict_writer, download):
 			except:
 				pass
 
-		#print(utc2sgt(str(dt2)))
-		#converted_sg_time = dt.astimezone(tz=None)
-		#shouldDownload = LastModifiedDateTimeIsOlder(dt)
-			#else:
-				#pass
-
 		if shouldDownload | download:
 
 			for summaryField in summaryFields:
@@ -86,8 +84,13 @@ def rss2csv(url, categoryValue, dict_writer, download):
 				pass
 
 			print("downloaded " + titleEntry)
-			dict_writer.writerow({date_time:converted_sg_time,title:titleEntry,publisher:feed.feed.title,
-				description:summaryEntry,link:entry['link'],category:categoryEntry})
+			dict_writer.writerow({date_time:converted_sg_time,
+				title:titleEntry,
+				publisher:feed.feed.title,
+				description:summaryEntry,
+				link:entry['link'],
+				category:categoryEntry,
+				publisher_description:publisher_description_entry})
 
 	pass
 
@@ -115,7 +118,7 @@ def update():
 def checkIfStringExistsInCSV(string):
 	with open(output_filename, 'rt', encoding='utf-8') as input_file:
 		df = pandas.read_csv(input_file)
-		searchList = ['category','article_description'] # list of columns to search from
+		searchList = [category,description,publisher_description] # list of columns to search from
 		for column in searchList:
 			#try:
 			lowercaseDf = df[column].str.lower()
@@ -138,9 +141,10 @@ if __name__ == "__main__":
 	publisher = 'article_publisher'
 	description = 'article_description'
 	link = 'article_url'
-	category = 'category'
+	category = 'article_category'
+	publisher_description = 'publisher_description'
 
-	fieldNames = [date_time, title, publisher, description, link, category]
+	fieldNames = [date_time, title, publisher, description, link, category, publisher_description]
 
 	usageMessage = "\nUsage: python aidantifier.py <command>\nExample: python aidantifier.py download\n\nOptions:\n1) download : download all rss feeds\n2) update : update rss feeds"
 	try:
