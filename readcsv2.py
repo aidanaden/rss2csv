@@ -11,7 +11,7 @@ from dateutil import parser
 from time import mktime
 
 def utc2sgt(time):
-	date = dateutil.parser.parse(time)
+	date = parser.parse(time)
 	from_zone = tz.tzutc()
 	to_zone = tz.tzlocal()
 
@@ -170,7 +170,7 @@ def checkIfStringExistsInCSV(string):
 				try:
 					webbrowser.get(chrome_path).open(results[varInput - 1])
 				except:
-					print('Index does not exist')
+					print('Index does not exist!')
 
 
 if __name__ == "__main__":
