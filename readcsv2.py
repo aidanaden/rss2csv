@@ -91,7 +91,7 @@ def rss2csv(url, dict_writer):
 	with open(output_filename, 'rt', encoding='utf-8') as input_file: 
 		dfX = pandas.read_csv(input_file)
 		for entry in feed['entries']:
-			if ((dfX[title] == entry['title']) & (dfX[link] == entry['link'])).any():
+			if (dfX[title] == entry['title']).any():
 				print('file exists')
 			else:
 				print('file does not exists') 
@@ -138,7 +138,7 @@ def checkIfStringExistsInCSV(string):
 	results_exists = 0
 	with open(output_filename, 'rt', encoding='utf-8') as input_file:
 		df = pandas.read_csv(input_file)
-		searchList = [category,description,publisher_description] # list of columns to search from
+		searchList = [link,category,description,publisher_description] # list of columns to search from
 		for column in searchList:
 
 			lowercaseDf = df[column].str.lower()
@@ -146,18 +146,15 @@ def checkIfStringExistsInCSV(string):
 			
 			for title, publisher, entryUrl in zip(selectedDf['article_title'], selectedDf['article_publisher'], selectedDf['article_url']):
 
-				if title == "":
+				if entryUrl in results:
 					pass
 				else:
 					results_exists += 1
 
-					if entryUrl in results:
-						continue
-					else:
-						print(index, ") Publisher: ",publisher)
-						print("Title: ", title, '\n')
+					print(index, ") Publisher: ",publisher)
+					print("Title: ", title, '\n')
 
-						results.append(entryUrl)
+					results.append(entryUrl)
 
 				index += 1
 
@@ -180,7 +177,7 @@ if __name__ == "__main__":
 	
 	news_feed_file = "News Feeds.csv"
 	output_filename = "output_feeds.csv"
-	chrome_path = "C:/Program Files (x86)/Google/Chrome/Application/chrome %s"
+	chrome_path = "C:/Program Files/Google/Chrome/Application/chrome.exe %s"
 	
 	date_time = 'article_published'
 	title = 'article_title'
